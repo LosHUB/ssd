@@ -1,0 +1,28 @@
+
+
+-- Charger la bibliothèque KeyGuardLibrary
+local KeyGuardLibrary = loadstring(game:HttpGet("https://cdn.keyguardian.org/library/v1.0.0.lua"))()
+if not KeyGuardLibrary then
+    error("Échec du chargement de KeyGuardLibrary. Vérifiez l'URL ou votre connexion.")
+end
+
+-- Configurer KeyGuardLibrary
+local trueData = "304ecc3ed1144355ae3d410a80bb688c"
+local falseData = "03d0cb94423c4ff48b4c3c6cab5f9415"
+KeyGuardLibrary.Set({
+    publicToken = "b21b716cc5054b499e925c99a61bc671",
+    privateToken = "de168967445d4680994f08e06aa3ad67",
+    trueData = trueData,
+    falseData = falseData,
+})
+
+-- Valider la clé
+local response = KeyGuardLibrary.validatePremiumKey(key)
+if response == trueData then
+    print("Clé valide. Chargement du script...")
+    -- Charger le script principal
+    local scriptURL = "https://raw.githubusercontent.com/LosHUB/L-HUBV3/refs/heads/main/Jeux/Main"
+    loadstring(game:HttpGet(scriptURL))()
+else
+    print("Clé invalide. Veuillez vérifier votre clé et réessayer.")
+end
