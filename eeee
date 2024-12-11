@@ -1,78 +1,173 @@
+local HttpService = game:GetService("HttpService")
+local FileName = "AutoSaveKeyL-HUB_" .. game.Players.LocalPlayer.Name .. ".txt"
+
+-- Charger KeyGuardLibrary
+print("Chargement de KeySystem...")
 local KeyGuardLibrary = loadstring(game:HttpGet("https://cdn.keyguardian.org/library/v1.0.0.lua"))()
- 
--- Define your true and false data
-local trueData = "4f801f8d8c784c2dab1d6eb36798b6ef"
-local falseData = "ae3489cf076346acbcc5676ff35bbc23"
- 
--- Initialize KeyGuard with the tokens and data
-KeyGuardLibrary.Set({
-  publicToken = "b21b716cc5054b499e925c99a61bc671",
-  privateToken = "de168967445d4680994f08e06aa3ad67",
-  trueData = trueData,
-  falseData = falseData,
-})
- 
--- Create the minimal GUI elements
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = game.Players.LocalPlayer.PlayerGui
- 
--- Frame for the UI
-local frame = Instance.new("Frame")
-frame.Parent = screenGui
-frame.Size = UDim2.new(0, 250, 0, 60)  -- Compact size for aesthetic look
-frame.AnchorPoint = Vector2.new(0.5, 0.5)  -- Center the frame based on anchor
-frame.Position = UDim2.new(0.5, 0, 0.50, 0)  -- Adjusted to move slightly higher
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-frame.BorderSizePixel = 0
-frame.BackgroundTransparency = 0.2
-frame.ClipsDescendants = true  -- Hide anything that overflows the frame
- 
--- Create a UICorner to round the corners of the frame
-local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)  -- Round corners
-corner.Parent = frame
- 
--- Input Box for entering the key
-local inputBox = Instance.new("TextBox")
-inputBox.Parent = frame
-inputBox.Size = UDim2.new(0, 230, 0, 30)  -- Slightly smaller size to keep it compact
-inputBox.Position = UDim2.new(0, 10, 0, 15)
-inputBox.Text = ""
-inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-inputBox.TextSize = 16
-inputBox.ClearTextOnFocus = true
-inputBox.TextXAlignment = Enum.TextXAlignment.Left
-inputBox.TextYAlignment = Enum.TextYAlignment.Center
-inputBox.TextWrapped = false  -- No wrapping
-inputBox.TextTruncate = Enum.TextTruncate.AtEnd  -- Hide overflow text
- 
--- Add a subtle glow effect to the text box (focus)
-inputBox.FocusLost:Connect(function()
-    if inputBox.Text == "" then
-        inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    else
-        inputBox.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
-    end
-end)
- 
--- Border effect on hover (for interactivity)
-inputBox.MouseEnter:Connect(function()
-    inputBox.BorderSizePixel = 2
-    inputBox.BorderColor3 = Color3.fromRGB(0, 255, 0)  -- Green on hover
-end)
- 
-inputBox.MouseLeave:Connect(function()
-    inputBox.BorderSizePixel = 0
-end)
- 
--- Directly validate the key when the script runs
-local response = KeyGuardLibrary.validatePremiumKey(key)
-if response == trueData then
-    print("Key is valid")
-    wait(5)  -- Optionally add a delay before destroying the GUI
-    screenGui:Destroy()  -- Destroy the GUI
-else
-    print("Key is invalid")
+if not KeyGuardLibrary then
+    error("Échec du chargement du KeySystem!")
+    return
 end
- 
+
+-- Configuration de KeyGuard
+local trueData = "e25ea5fdaaf140f79fa3b8c4ef5b1d13"
+local falseData = "61eaea96b11c4a40a2185e1e38e588bb"
+
+KeyGuardLibrary.Set({
+    publicToken = "b21b716cc5054b499e925c99a61bc671",
+    privateToken = "de168967445d4680994f08e06aa3ad67",
+    trueData = trueData,
+    falseData = falseData,
+})
+
+-- Fonction pour vérifier la validité de la clé
+local function isKeyValid(key)
+    local freeResponse = KeyGuardLibrary.validateDefaultKey(key)
+    if freeResponse == trueData then
+        return "free"
+    else
+        local premiumResponse = KeyGuardLibrary.validatePremiumKey(key)
+        if premiumResponse == trueData then
+            return "premium"
+        else
+            return false
+        end
+    end
+end
+
+-- Fonction pour charger le jeu principal
+local function LoadGame()
+    print("Chargement du jeu principal...")
+    local scriptURL = "https://raw.githubusercontent.com/LosHUB/L-HUBV3/refs/heads/main/Jeux/Main"
+    loadstring(game:HttpGet(scriptURL))() -- Charger et exécuter le script principal
+end
+
+-- Validation de la clé par défaut
+local keyType = isKeyValid(key)
+if keyType then
+    print("Clé valide détectée : (" .. keyType:upper() .. ")")
+    LoadGame()
+    return -- Arrêter le script ici si la clé est valide
+end
+
+-- Charger Fluent uniquement si la clé est invalide
+print("Chargement de Fluent...")
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+if not Fluent then
+    error("Échec du chargement de Fluent!")
+    return
+end
+
+-- Créer l'interface utilisateur Fluent
+local Window = Fluent:CreateWindow({
+    Title = "Key System",
+    SubTitle = "L-HUB",
+    TabWidth = 100,
+    Size = UDim2.fromOffset(440, 300),
+    Acrylic = false,
+    Theme = "Darker",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    KeySys = Window:AddTab({ Title = "Key System", Icon = "key" }),
+}
+
+-- Champ pour entrer une clé
+local EntKey = Tabs.KeySys:AddInput("Input", {
+    Title = "Entrer la clé",
+    Description = "Saisissez votre clé ci-dessous",
+    Default = key or "",
+    Placeholder = "Entrez votre clé ici...",
+    Numeric = false,
+    Finished = false,
+    Callback = function(Value)
+        key = Value
+    end
+})
+
+-- Bouton pour vérifier la clé
+local CheckKey = Tabs.KeySys:AddButton({
+    Title = "Vérifier la clé",
+    Description = "Cliquez pour valider la clé entrée",
+    Callback = function()
+        local keyType = isKeyValid(key)
+        if keyType then
+            print("Clé valide détectée : (" .. keyType:upper() .. ")")
+            writefile(FileName, HttpService:JSONEncode({ key = key }))
+
+            -- Notification de succès
+            Fluent:Notify({
+                Title = "Clé valide",
+                Content = "Votre clé est valide en tant que clé " .. keyType:upper(),
+                SubContent = "Accès accordé!",
+                Duration = 5
+            })
+            wait(1)
+            LoadGame()
+        else
+            print("Clé invalide!")
+            
+            -- Notification d'échec
+            Fluent:Notify({
+                Title = "Clé invalide",
+                Content = "La clé que vous avez saisie est invalide.",
+                SubContent = "Veuillez vérifier et réessayer.",
+                Duration = 5
+            })
+        end
+    end
+})
+
+-- Bouton pour copier le lien de la clé
+local GetKey = Tabs.KeySys:AddButton({
+    Title = "Obtenir le lien de la clé",
+    Description = "Copie le lien de la clé dans le presse-papiers",
+    Callback = function()
+        if setclipboard then
+            setclipboard(KeyGuardLibrary.getLink())
+            print("Lien de clé copié dans le presse-papiers!")
+
+            -- Notification de copie réussie
+            Fluent:Notify({
+                Title = "Lien de clé copié",
+                Content = "Le lien a été copié dans le presse-papiers.",
+                SubContent = "Vous pouvez maintenant le partager ou l'utiliser.",
+                Duration = 5
+            })
+        else
+            print("Presse-papiers non pris en charge!")
+            
+            -- Notification en cas d'échec
+            Fluent:Notify({
+                Title = "Erreur de presse-papiers",
+                Content = "La fonction de presse-papiers n'est pas prise en charge.",
+                SubContent = "Impossible de copier le lien.",
+                Duration = 5
+            })
+        end
+    end
+})
+
+-- Charger automatiquement une clé enregistrée
+if isfile(FileName) then
+    local savedData = readfile(FileName)
+    local savedKey = HttpService:JSONDecode(savedData).key or nil
+    if savedKey and isKeyValid(savedKey) then
+        print("Clé enregistrée automatiquement validée : (" .. keyType:upper() .. ")")
+        
+        Fluent:Notify({
+            Title = "Validation automatique",
+            Content = "Votre clé enregistrée est valide.",
+            SubContent = "Chargement automatique...",
+            Duration = 5
+        })
+        wait(1)
+        LoadGame()
+    else
+        print("Clé enregistrée invalide. Suppression.")
+        delfile(FileName)
+    end
+end
+
+Window:SelectTab(1)
