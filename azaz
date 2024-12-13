@@ -1,0 +1,196 @@
+local HttpService = game:GetService("HttpService")
+local FileName = "AutoSaveKeyL-HUB_" .. game.Players.LocalPlayer.Name .. ".txt"
+
+-- Initialisation de la variable key
+local key = nil
+
+-- Chargement de KeyGuardLibrary
+print("Starting script...")
+print("Loading KeySystem...")
+local KeyGuardLibrary = loadstring(game:HttpGet("https://cdn.keyguardian.org/library/v1.0.0.lua"))()
+if not KeyGuardLibrary then
+    error("Failed to load KeySystem!")
+    return
+end
+print("KeySystem loaded successfully.")
+
+-- Configuration de KeyGuard
+local trueData = "e25ea5fdaaf140f79fa3b8c4ef5b1d13"
+local falseData = "61eaea96b11c4a40a2185e1e38e588bb"
+
+print("Setting up KeyGuard...")
+KeyGuardLibrary.Set({
+    publicToken = "b21b716cc5054b499e925c99a61bc671",
+    privateToken = "de168967445d4680994f08e06aa3ad67",
+    trueData = trueData,
+    falseData = falseData,
+})
+print("KeyGuard setup completed.")
+
+-- Fonction pour vérifier la validité de la clé
+local function isKeyValid(key)
+    if not key or key == "" then
+        print("Invalid key received for validation:", key)
+        return false
+    end
+    print("Validating key:", key)
+    local freeResponse = KeyGuardLibrary.validateDefaultKey(key)
+    print("Default key response:", freeResponse)
+    if freeResponse == trueData then
+        return "free"
+    else
+        local premiumResponse = KeyGuardLibrary.validatePremiumKey(key)
+        print("Premium key response:", premiumResponse)
+        if premiumResponse == trueData then
+            return "premium"
+        else
+            return false
+        end
+    end
+end
+
+-- Fonction pour charger le jeu principal
+local function LoadGame()
+    print("Attempting to load the main game...")
+    Fluent.Destroy()
+    local scriptURL = "https://raw.githubusercontent.com/LosHUB/L-HUBV3/refs/heads/main/Jeux/Main"
+    print("Fetching main script from:", scriptURL)
+    loadstring(game:HttpGet(scriptURL))()
+    print("Main game loaded.")
+end
+
+-- Charger automatiquement une clé sauvegardée
+print("Checking for saved key...")
+if isfile(FileName) then
+    local savedData = readfile(FileName)
+    local savedKey = HttpService:JSONDecode(savedData).key or nil
+    print("Saved key found:", savedKey)
+    if savedKey and savedKey ~= "" then
+        local keyType = isKeyValid(savedKey)
+        if keyType then
+            print("Automatically validated saved key: (" .. keyType:upper() .. ")")
+            LoadGame()
+            return
+        else
+            print("Invalid saved key. Deleting file.")
+            delfile(FileName)
+        end
+    else
+        print("No valid key data found in the file.")
+    end
+else
+    print("No saved key file found.")
+end
+
+-- Charger Fluent si aucune clé valide n'est trouvée
+print("Loading Fluent...")
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+if not Fluent then
+    error("Failed to load Fluent!")
+    return
+end
+print("Fluent loaded successfully.")
+
+-- Création de l'interface Fluent
+print("Creating Fluent UI...")
+local Window = Fluent:CreateWindow({
+    Title = "Key System",
+    SubTitle = "L-HUB",
+    TabWidth = 100,
+    Size = UDim2.fromOffset(440, 300),
+    Acrylic = false,
+    Theme = "Darker",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+print("Fluent UI created.")
+
+local Tabs = {
+    KeySys = Window:AddTab({ Title = "Key System", Icon = "key" }),
+}
+
+-- Champ d'entrée pour saisir une clé
+local EntKey = Tabs.KeySys:AddInput("Input", {
+    Title = "Enter Key",
+    Description = "Enter your key below",
+    Default = key or "",
+    Placeholder = "Enter your key here...",
+    Numeric = false,
+    Finished = false,
+    Callback = function(Value)
+        print("Key input received:", Value)
+        key = Value
+    end
+})
+
+-- Bouton pour valider la clé
+local CheckKey = Tabs.KeySys:AddButton({
+    Title = "Validate Key",
+    Description = "Click to validate the entered key",
+    Callback = function()
+        if not key or key == "" then
+            print("No key entered!")
+            Fluent:Notify({
+                Title = "No Key",
+                Content = "Please enter a key before validating.",
+                SubContent = "Key cannot be empty.",
+                Duration = 5
+            })
+            return
+        end
+
+        print("Validating entered key...")
+        local keyType = isKeyValid(key)
+        if keyType then
+            print("Valid key detected: (" .. keyType:upper() .. ")")
+            writefile(FileName, HttpService:JSONEncode({ key = key }))
+
+            Fluent:Notify({
+                Title = "Valid Key",
+                Content = "Your key is valid as a " .. keyType:upper() .. " key",
+                SubContent = "Access granted!",
+                Duration = 5
+            })
+            wait(1)
+            LoadGame()
+        else
+            print("Invalid key!")
+            Fluent:Notify({
+                Title = "Invalid Key",
+                Content = "The key you entered is invalid.",
+                SubContent = "Please check and try again.",
+                Duration = 5
+            })
+        end
+    end
+})
+
+-- Bouton pour copier le lien de clé
+local GetKey = Tabs.KeySys:AddButton({
+    Title = "Get Key Link",
+    Description = "Copy the key link to the clipboard",
+    Callback = function()
+        if setclipboard then
+            local keyLink = KeyGuardLibrary.getLink()
+            setclipboard(keyLink)
+            print("Key link copied to clipboard:", keyLink)
+            Fluent:Notify({
+                Title = "Key Link Copied",
+                Content = "The link has been copied to the clipboard.",
+                SubContent = "You can now share or use it.",
+                Duration = 5
+            })
+        else
+            print("Clipboard not supported!")
+            Fluent:Notify({
+                Title = "Clipboard Error",
+                Content = "Clipboard function is not supported.",
+                SubContent = "Unable to copy the link.",
+                Duration = 5
+            })
+        end
+    end
+})
+
+print("Script initialization complete. Awaiting user interaction...")
+Window:SelectTab(1)
+  
