@@ -1,7 +1,11 @@
-
+print("yo")
 local HttpService = game:GetService("HttpService")
 local FileName = "AutoSaveKeyL-HUB_" .. game.Players.LocalPlayer.Name .. ".txt"
--- Load KeyGuardLibrary
+
+-- Initialisation de la variable `key`
+local key = nil
+
+-- Chargement de KeyGuardLibrary
 print("Starting script...")
 print("Loading KeySystem...")
 local KeyGuardLibrary = loadstring(game:HttpGet("https://cdn.keyguardian.org/library/v1.0.0.lua"))()
@@ -11,7 +15,7 @@ if not KeyGuardLibrary then
 end
 print("KeySystem loaded successfully.")
 
--- KeyGuard configuration
+-- Configuration de KeyGuard
 local trueData = "e25ea5fdaaf140f79fa3b8c4ef5b1d13"
 local falseData = "61eaea96b11c4a40a2185e1e38e588bb"
 
@@ -24,7 +28,7 @@ KeyGuardLibrary.Set({
 })
 print("KeyGuard setup completed.")
 
--- Function to check key validity
+-- Fonction pour vérifier la validité de la clé
 local function isKeyValid(key)
     print("Validating key:", key)
     local freeResponse = KeyGuardLibrary.validateDefaultKey(key)
@@ -42,7 +46,7 @@ local function isKeyValid(key)
     end
 end
 
--- Function to load the main game
+-- Fonction pour charger le jeu principal
 local function LoadGame()
     print("Attempting to load the main game...")
     Fluent.Destroy()
@@ -52,13 +56,13 @@ local function LoadGame()
     print("Main game loaded.")
 end
 
--- Automatically load a saved key
+-- Charger automatiquement une clé sauvegardée
 print("Checking for saved key...")
 if isfile(FileName) then
     local savedData = readfile(FileName)
     local savedKey = HttpService:JSONDecode(savedData).key or nil
     print("Saved key found:", savedKey)
-    if savedKey then
+    if savedKey and savedKey ~= "" then
         local keyType = isKeyValid(savedKey)
         if keyType then
             print("Automatically validated saved key: (" .. keyType:upper() .. ")")
@@ -69,13 +73,13 @@ if isfile(FileName) then
             delfile(FileName)
         end
     else
-        print("No saved key data found in the file.")
+        print("No valid key data found in the file.")
     end
 else
     print("No saved key file found.")
 end
 
--- Load Fluent only if no valid key is found
+-- Charger Fluent si aucune clé valide n'est trouvée
 print("Loading Fluent...")
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 if not Fluent then
@@ -84,7 +88,7 @@ if not Fluent then
 end
 print("Fluent loaded successfully.")
 
--- Create the Fluent UI
+-- Création de l'interface Fluent
 print("Creating Fluent UI...")
 local Window = Fluent:CreateWindow({
     Title = "Key System",
@@ -101,7 +105,7 @@ local Tabs = {
     KeySys = Window:AddTab({ Title = "Key System", Icon = "key" }),
 }
 
--- Input field to enter a key
+-- Champ d'entrée pour saisir une clé
 local EntKey = Tabs.KeySys:AddInput("Input", {
     Title = "Enter Key",
     Description = "Enter your key below",
@@ -115,11 +119,22 @@ local EntKey = Tabs.KeySys:AddInput("Input", {
     end
 })
 
--- Button to check the key
+-- Bouton pour valider la clé
 local CheckKey = Tabs.KeySys:AddButton({
     Title = "Validate Key",
     Description = "Click to validate the entered key",
     Callback = function()
+        if not key or key == "" then
+            print("No key entered!")
+            Fluent:Notify({
+                Title = "No Key",
+                Content = "Please enter a key before validating.",
+                SubContent = "Key cannot be empty.",
+                Duration = 5
+            })
+            return
+        end
+
         print("Validating entered key...")
         local keyType = isKeyValid(key)
         if keyType then
@@ -146,7 +161,7 @@ local CheckKey = Tabs.KeySys:AddButton({
     end
 })
 
--- Button to copy the key link
+-- Bouton pour copier le lien de clé
 local GetKey = Tabs.KeySys:AddButton({
     Title = "Get Key Link",
     Description = "Copy the key link to the clipboard",
